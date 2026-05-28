@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NEXUS — Asistente Universitario IA</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --accent: #ff6b35;
+      --accent-dark: #e55a25;
+      --accent-glow: rgba(255, 107, 53, 0.1);
+      --bg-app: #0a0a0a;
+      --bg-header: #0f0f0f;
+      --bg-surface: #1a1a1a;
+      --bg-input: #111;
+      --border: #1e1e1e;
+      --border-soft: #262626;
+      --text-primary: #e8e8e8;
+      --text-secondary: #888;
+      --text-muted: #444;
+      --font-mono: 'Space Mono', monospace;
+      --font-body: 'DM Sans', sans-serif;
+      --radius: 14px;
+      --radius-sm: 9px;
+    }
+
+    body {
+      font-family: var(--font-body);
+      background: #050505;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .app {
+      width: 100%;
+      max-width: 740px;
+      background: var(--bg-app);
+      border-radius: 20px;
+      border: 1px solid var(--border);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      height: 90vh;
+      max-height: 820px;
+      box-shadow:
+        0 0 0 1px #1a1a1a,
+        0 0 80px var(--accent-glow),
+        0 40px 80px rgba(0,0,0,0.6);
+    }
+
+    /* ─── Header ─── */
+    .header {
+      background: var(--bg-header);
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+      position: relative;
+    }
+
+    .header::after {
+      content: '';
+      position: absolute;
+      bottom: 0; left: 0; right: 0; height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(255,107,53,0.15), transparent);
+    }
+
+    .logo { font-family: var(--font-mono); font-size: 22px; font-weight: 700; color: var(--accent); letter-spacing: 4px; }
+    .logo-sub { font-size: 10px; color: var(--text-muted); letter-spacing: 1.8px; text-transform: uppercase; margin-top: 3px; }
+
+    .header-right { margin-left: auto; display: flex; align-items: center; gap: 14px; }
+
+    .model-badge {
+      font-family: var(--font-mono);
+      font-size: 10px; color: #22c55e;
+      background: rgba(34,197,94,0.08);
+      border: 1px solid rgba(34,197,94,0.2);
+      padding: 4px 10px; border-radius: 20px;
+    }
+
+    .status { display: flex; align-items: center; gap: 7px; font-size: 11px; color: var(--text-muted); font-family: var(--font-mono); }
+    .status-dot { width: 7px; height: 7px; border-radius: 50%; background: #22c55e; animation: pulse 2s ease-in-out infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+    /* ─── Mensajes ─── */
+    .messages {
+      flex: 1; overflow-y: auto; padding: 24px;
+      display: flex; flex-direction: column; gap: 18px;
+      background: var(--bg-app); scroll-behavior: smooth;
+    }
+    .messages::-webkit-scrollbar { width: 3px; }
+    .messages::-webkit-scrollbar-thumb { background: #1a1a1a; border-radius: 3px; }
+
+    .empty-state { margin: auto; text-align: center; padding: 20px; animation: fadeIn 0.6s ease; }
+    .empty-logo { font-family: var(--font-mono); font-size: 42px; font-weight: 700; color: var(--accent); letter-spacing: 5px; margin-bottom: 6px; }
+    .empty-tagline { font-size: 13px; color: #333; margin-bottom: 28px; line-height: 1.7; }
+
+    .suggestions { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+    .chip {
+      background: var(--bg-surface); border: 1px solid var(--border-soft);
+      color: var(--text-muted); font-size: 12px; padding: 8px 15px; border-radius: 20px;
+      cursor: pointer; transition: all 0.2s;
+    }
+    .chip:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-glow); transform: translateY(-1px); }
+
+    .msg { display: flex; flex-direction: column; max-width: 78%; animation: slideUp 0.3s ease; }
+    @keyframes slideUp { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+    @keyframes fadeIn  { from{opacity:0} to{opacity:1} }
+
+    .msg.user  { align-self: flex-end; align-items: flex-end; }
+    .msg.bot   { align-self: flex-start; align-items: flex-start; }
+
+    .msg-name { font-size: 10px; font-family: var(--font-mono); color: var(--accent); letter-spacing: 1.2px; margin-bottom: 5px; text-transform: uppercase; }
+
+    .bubble { padding: 12px 16px; border-radius: 16px; font-size: 14px; line-height: 1.7; word-break: break-word; }
+    .user .bubble { background: var(--accent); color: #fff; border-bottom-right-radius: 4px; }
+    .bot  .bubble { background: var(--bg-surface); color: var(--text-primary); border: 1px solid var(--border-soft); border-bottom-left-radius: 4px; }
+    .bot  .bubble strong { color: var(--accent); }
+    .bot  .bubble em     { color: var(--text-secondary); font-style: italic; }
+    .bot  .bubble code   { background: #0d0d0d; padding: 2px 7px; border-radius: 4px; font-family: var(--font-mono); font-size: 12px; color: #7dd3fc; border: 1px solid #1a1a1a; }
+
+    /* ─── Typing ─── */
+    .typing-indicator { align-self: flex-start; animation: slideUp 0.3s ease; }
+    .typing-bubbles { background: var(--bg-surface); border: 1px solid var(--border-soft); border-radius: 16px; border-bottom-left-radius: 4px; padding: 14px 18px; display: flex; gap: 5px; align-items: center; }
+    .typing-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); animation: typingBounce 1.3s ease-in-out infinite; }
+    .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+    .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes typingBounce { 0%,60%,100%{transform:translateY(0);opacity:0.4} 30%{transform:translateY(-7px);opacity:1} }
+
+    /* ─── Input ─── */
+    .input-area {
+      background: var(--bg-input); padding: 14px 24px;
+      border-top: 1px solid var(--border);
+      display: flex; gap: 12px; align-items: flex-end; flex-shrink: 0;
+    }
+    .input-wrap {
+      flex: 1; background: var(--bg-surface); border: 1px solid var(--border-soft);
+      border-radius: var(--radius); display: flex; align-items: flex-end;
+      padding: 4px 4px 4px 16px; transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .input-wrap:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); }
+    .chat-input {
+      flex: 1; background: transparent; border: none; color: var(--text-primary);
+      font-size: 14px; font-family: var(--font-body); resize: none;
+      padding: 8px 0; max-height: 120px; min-height: 38px; line-height: 1.5;
+    }
+    .chat-input:focus { outline: none; }
+    .chat-input::placeholder { color: #333; }
+
+    .send-btn {
+      background: var(--accent); color: #fff; border: none;
+      width: 44px; height: 44px; border-radius: var(--radius-sm);
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; transition: background 0.2s, transform 0.1s, box-shadow 0.2s; font-size: 16px;
+    }
+    .send-btn:hover  { background: var(--accent-dark); box-shadow: 0 4px 16px rgba(255,107,53,0.3); }
+    .send-btn:active { transform: scale(0.95); }
+    .send-btn:disabled { background: #1e1e1e; cursor: not-allowed; box-shadow: none; }
+
+    .footer-hint { font-size: 10px; color: #2a2a2a; font-family: var(--font-mono); text-align: center; padding: 6px 24px 10px; background: var(--bg-input); }
+
+    @media (max-width: 600px) {
+      body { padding: 0; }
+      .app { height: 100vh; border-radius: 0; max-height: none; }
+      .msg { max-width: 90%; }
+      .model-badge { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+
+    <div class="header">
+      <div>
+        <div class="logo">NEXUS</div>
+        <div class="logo-sub">Asistente Universitario · IA</div>
+      </div>
+      <div class="header-right">
+        <span class="model-badge">gemini-2.0-flash · gratis</span>
+        <div class="status">
+          <div class="status-dot"></div>
+          <span>en línea</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="messages" id="messages">
+      <div class="empty-state" id="emptyState">
+        <div class="empty-logo">NEXUS</div>
+        <div class="empty-tagline">
+          Tu asistente universitario inteligente<br/>
+          <span style="color:#2a2a2a;font-size:12px;">Haz una pregunta para comenzar</span>
+        </div>
+        <div class="suggestions">
+          <div class="chip" onclick="quickSend('¿Cuáles son las mejores técnicas para estudiar un examen difícil?')">💡 Técnicas de estudio</div>
+          <div class="chip" onclick="quickSend('Explícame qué es la inteligencia artificial de forma sencilla')">🤖 ¿Qué es la IA?</div>
+          <div class="chip" onclick="quickSend('Ayúdame a organizar mi tiempo para estudiar esta semana')">📅 Organizar mi tiempo</div>
+          <div class="chip" onclick="quickSend('¿Cómo escribo una buena introducción para un ensayo universitario?')">✍️ Escribir ensayos</div>
+          <div class="chip" onclick="quickSend('Dame consejos para reducir el estrés en época de exámenes')">🧘 Manejar el estrés</div>
+          <div class="chip" onclick="quickSend('¿Qué es un agente de inteligencia artificial?')">🧠 Agentes de IA</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="input-area">
+      <div class="input-wrap">
+        <textarea
+          class="chat-input" id="userInput"
+          placeholder="Escribe tu pregunta..."
+          rows="1"
+          onkeydown="handleKey(event)"
+          oninput="autoResize(this)"></textarea>
+      </div>
+      <button class="send-btn" id="sendBtn" onclick="enviarMensaje()" title="Enviar">&#9658;</button>
+    </div>
+    <div class="footer-hint">Enter para enviar &nbsp;·&nbsp; Shift+Enter para nueva línea</div>
+
+  </div>
+
+  <script>
+    /* =============================================
+       NEXUS — sin API Key visible
+       Cambia WORKER_URL por tu URL de Cloudflare
+    ============================================= */
+
+    // ⚠️ REEMPLAZA ESTO con tu URL de Cloudflare Worker
+    const WORKER_URL = 'https://long-field-2e8a.delgadojoseluis455.workers.dev/';
+
+    let historial = [];
+    let cargando = false;
+
+    const SYSTEM_PROMPT = `Eres NEXUS, un asistente universitario inteligente, amigable y motivador creado para ayudar a estudiantes colombianos.
+
+Tu personalidad:
+- Directo y claro, sin rodeos innecesarios
+- Entusiasta y empático — entiendes el estrés universitario
+- Usas ejemplos concretos y prácticos
+- Hablas en español colombiano natural (no demasiado formal)
+- Cuando sea útil, estructuras las respuestas con listas o pasos numerados
+
+Puedes ayudar con:
+- Dudas académicas de cualquier materia
+- Técnicas de estudio y memorización
+- Organización del tiempo y productividad
+- Explicación de conceptos complejos de forma simple
+- Orientación sobre trabajos y ensayos universitarios
+- Manejo del estrés en época de exámenes
+- Preguntas sobre tecnología, programación e inteligencia artificial
+
+Reglas:
+- Máximo 4 párrafos por respuesta, a menos que el estudiante pida más detalle
+- Termina con una pregunta de seguimiento cuando sea relevante
+- Si no sabes algo con certeza, dilo honestamente`;
+
+    // Mensaje de bienvenida al cargar
+    window.addEventListener('load', () => {
+      setTimeout(() => {
+        agregarMensaje('bot', '¡Hola! Soy **NEXUS**, tu asistente universitario con IA. 🎓\n\nEstoy aquí para ayudarte con dudas académicas, técnicas de estudio, organización y mucho más. ¿En qué te puedo ayudar hoy?');
+      }, 400);
+    });
+
+    async function enviarMensaje() {
+      if (cargando) return;
+      const input = document.getElementById('userInput');
+      const texto = input.value.trim();
+      if (!texto) return;
+
+      input.value = '';
+      autoResize(input);
+      agregarMensaje('user', texto);
+      historial.push({ role: 'user', parts: [{ text: texto }] });
+
+      cargando = true;
+      document.getElementById('sendBtn').disabled = true;
+      mostrarTyping();
+
+      try {
+        const res = await fetch(WORKER_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            system_instruction: { parts: [{ text: SYSTEM_PROMPT }] },
+            contents: historial,
+            generationConfig: { maxOutputTokens: 1024, temperature: 0.75 }
+          })
+        });
+
+        const data = await res.json();
+        ocultarTyping();
+
+        if (data.candidates?.[0]?.content?.parts?.[0]?.text) {
+          const respuesta = data.candidates[0].content.parts[0].text;
+          historial.push({ role: 'model', parts: [{ text: respuesta }] });
+          agregarMensaje('bot', respuesta);
+        } else if (data.error) {
+          agregarMensaje('bot', `⚠️ Error: ${data.error.message || 'Intenta de nuevo.'}`);
+        } else {
+          agregarMensaje('bot', '⚠️ Respuesta inesperada. Intenta de nuevo.');
+        }
+      } catch (err) {
+        ocultarTyping();
+        agregarMensaje('bot', '⚠️ Error de conexión. Verifica tu internet.');
+      }
+
+      cargando = false;
+      document.getElementById('sendBtn').disabled = false;
+    }
+
+    function agregarMensaje(rol, texto) {
+      const msgs = document.getElementById('messages');
+      const empty = document.getElementById('emptyState');
+      if (empty) empty.remove();
+
+      const div = document.createElement('div');
+      div.className = `msg ${rol}`;
+
+      if (rol === 'bot') {
+        div.innerHTML = `<div class="msg-name">NEXUS</div><div class="bubble">${formatearTexto(texto)}</div>`;
+      } else {
+        div.innerHTML = `<div class="bubble">${escaparHtml(texto)}</div>`;
+      }
+      msgs.appendChild(div);
+      msgs.scrollTop = msgs.scrollHeight;
+    }
+
+    function formatearTexto(t) {
+      return escaparHtml(t)
+        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+        .replace(/\*(.*?)\*/g, '<em>$1</em>')
+        .replace(/`(.*?)`/g, '<code>$1</code>')
+        .replace(/^(\d+)\.\s(.+)/gm, '<br/><b>$1.</b> $2')
+        .replace(/^[-•]\s(.+)/gm, '<br/>• $1')
+        .replace(/\n\n/g, '<br/><br/>')
+        .replace(/\n/g, '<br/>');
+    }
+
+    function escaparHtml(t) {
+      return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    function mostrarTyping() {
+      const msgs = document.getElementById('messages');
+      const d = document.createElement('div');
+      d.id = 'typingIndicator'; d.className = 'typing-indicator';
+      d.innerHTML = `<div class="msg-name">NEXUS</div><div class="typing-bubbles"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div>`;
+      msgs.appendChild(d);
+      msgs.scrollTop = msgs.scrollHeight;
+    }
+
+    function ocultarTyping() {
+      const t = document.getElementById('typingIndicator');
+      if (t) t.remove();
+    }
+
+    function quickSend(texto) {
+      document.getElementById('userInput').value = texto;
+      enviarMensaje();
+    }
+
+    function handleKey(e) {
+      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); enviarMensaje(); }
+    }
+
+    function autoResize(el) {
+      el.style.height = 'auto';
+      el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+    }
+  </script>
+</body>
+</html>
